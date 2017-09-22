@@ -72,17 +72,17 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
         // 轴的右儿子变为为 原来的右分支的左儿子， 左儿子不变
         node.right = leftOf(rightNode);
 
-        if(rightNode.left != null){
+        if (rightNode.left != null) {
             rightNode.left.parent = node;
         }
 
         // 右儿子的父亲变为轴的父亲
         rightNode.parent = parentOf(node);
-        if(parentOf(node) == null){
+        if (parentOf(node) == null) {
             root = rightNode;
-        }else if(leftOf(parentOf(node)) == node){
+        } else if (leftOf(parentOf(node)) == node) {
             node.parent.left = rightNode;
-        }else{
+        } else {
             node.parent.right = rightNode;
         }
         rightNode.left = node;
@@ -104,14 +104,14 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
 
         node.left = rightOf(leftNode);
 
-        if(rightOf(leftNode) != null){
+        if (rightOf(leftNode) != null) {
             rightOf(leftNode).parent = node;
         }
         leftNode.parent = node.parent;
 
-        if(parentOf(node) == null){
+        if (parentOf(node) == null) {
             root = leftNode;
-        } else if(rightOf(parentOf(node)) == node){
+        } else if (rightOf(parentOf(node)) == node) {
             node.parent.right = leftNode;
         } else {
             node.parent.left = leftNode;
@@ -158,7 +158,6 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
                 } else if (result > 0) {  // 如果比父节点大,则走右分支，递归
                     t = t.right;
                 } else {  // 如果相等，则不需要加入值 (TreeMap是直接覆盖value)
-                    System.out.println("树中已经存在该值");
                     return false;
                 }
             } while (null != t);
@@ -176,7 +175,6 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
                 } else if (result > 0) { // 如果比父节点大,则走右分支，递归
                     t = t.right;
                 } else { // 如果相等，则不需要加入值 (TreeMap是直接覆盖value)
-                    System.out.println("树中已经存在该值");
                     return false;
                 }
             } while (t != null);
@@ -293,14 +291,11 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
     @Override
     public boolean remove(T value) {
 
-        System.out.println("delete " + value);
-
         // 1.查找元素
         RBNode<T> node = getNode(value);
 
         // 如果找不到，说明不存在
         if (null == node) {
-            System.out.println("树中不存在该节点");
             return false;
         }
 
@@ -316,21 +311,18 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
     private void deleteNode(RBNode<T> node) {
 
 
-        // 如果该节点有2个非叶子的儿子节点，则找到左儿子的最大值，将最大值替换到需要删除的节点上
-        // 转为删除左儿子最大值的问题
+        // 如果该节点有2个非叶子的儿子节点，则找到左儿子树的最大值或者右儿子树最小值，将最大值替换到需要删除的节点上
         if (leftOf(node) != null && rightOf(node) != null) {
-            RBNode<T> leftMax = getMaxLeftNode(node);
-            node.value = leftMax.value;
-            node = leftMax;
+            RBNode<T> m = successor(node);
+            node.value = m.value;
+            node = m;
         }
-        System.out.println("before " + node.value);
 
         // 从此处起转化为删除最多只有一个儿子的问题
         RBNode<T> child = leftOf(node) != null ? leftOf(node) : rightOf(node);
         if (null != child) {
 
             // 有一个儿子,把儿子取代父亲的位置, 有儿子必然是红色的儿子
-            System.out.println(child.color);
             child.parent = node.parent;
             if (parentOf(node) == null) {
                 root = child; //删除点是根的情况
@@ -343,16 +335,17 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
             node.left = null;
             node.right = null;
             node.parent = null;
-            child.color = BLACK;
 
-            if(isBlack(parentOf(node))){
-                fixAfterDelete(child);
-            }
+            // TreeMap中这里进行了一次修复方法调用，那个while循环不会进入，
+            // 所以可以直接调用最后一句颜色渲染即可
+            setColor(child, BLACK);
+
         } else if (null == parentOf(node)) {
 
             // 既没儿子也没父节点，则说明这是树的唯一元素，直接删除即可
             root = null;
         } else {
+
 
             // 没儿子有父节点
             if (isBlack(node)) {
@@ -360,10 +353,6 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
                 // 如果删除的是一个黑色节点，则破坏了红黑树特性，需要修复
                 fixAfterDelete(node);
             }
-
-            System.out.println("after " + node.value);
-
-            // todo 这里必须判空，对应的fixAfterDelete的强制将node=root??????
             if (null != parentOf(node)) {
                 // 如果删除的是一个红节点，直接删除即可
                 if (leftOf(parentOf(node)) == node) {
@@ -374,8 +363,23 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
                 node.parent = null;
             }
         }
-
         size--;
+    }
+
+    private RBNode<T> successor(RBNode<T> node) {
+        if (node.left != null) {
+            RBNode<T> maxLeft = node.left;
+            while (maxLeft.right != null) {
+                maxLeft = maxLeft.right;
+            }
+            return maxLeft;
+        } else {
+            RBNode<T> minRight = node.right;
+            while (minRight.left != null) {
+                minRight = minRight.left;
+            }
+            return minRight;
+        }
     }
 
 

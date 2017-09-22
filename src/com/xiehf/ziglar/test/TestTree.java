@@ -16,13 +16,16 @@ public class TestTree {
         RBTree rb = new RBTree();
         Scanner scanner = new Scanner(System.in);
         int t = 0;
-        while (t < 5){
-            System.out.println("输入:");
-            int i = scanner.nextInt();
+        while (t < 200){
+            int i = new Random().nextInt(500);
             rb.add(i);
-            System.out.println(i);
             t++;
         }
         System.out.println(rb);
+        while(t>0){
+            int i = new Random().nextInt(500);
+            rb.remove(i);
+            t--;
+        }
     }
 }
