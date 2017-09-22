@@ -12,7 +12,7 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
     private Comparator<? super T> comparator;
 
     // 根节点
-    private transient RBNode root = null;
+    private transient RBNode<T> root = null;
 
     private static final boolean BLACK = true;
 
@@ -62,35 +62,31 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
      *
      * @param node 旋转轴
      */
-    private void leftRotate(RBNode node) {
+    private void leftRotate(RBNode<T> node) {
         if (node == null) {
             return;
         }
-
-        // 父节点
-        RBNode<T> parent = parentOf(node);
-
         // 右儿子
-        RBNode rbNode = rightOf(node);
+        RBNode rightNode = rightOf(node);
 
         // 轴的右儿子变为为 原来的右分支的左儿子， 左儿子不变
-        node.right = rbNode.left;
+        node.right = leftOf(rightNode);
+
+        if(rightNode.left != null){
+            rightNode.left.parent = node;
+        }
 
         // 右儿子的父亲变为轴的父亲
-        rbNode.parent = parent;
-
-        // 轴的父节点变为 右儿子
-        rbNode.left = node;
-        node.parent = rbNode;
-
-        // 父节点不为空
-        if (null != parent) {
-            if (node == leftOf(parent)) {
-                parent.left = rbNode;
-            } else { // 轴是父节点的右节点
-                parent.right = rbNode;
-            }
+        rightNode.parent = parentOf(node);
+        if(parentOf(node) == null){
+            root = rightNode;
+        }else if(leftOf(parentOf(node)) == node){
+            node.parent.left = rightNode;
+        }else{
+            node.parent.right = rightNode;
         }
+        rightNode.left = node;
+        node.parent = rightNode;
     }
 
     /**
@@ -98,35 +94,30 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
      *
      * @param node 旋转轴
      */
-    private void rightRotate(RBNode node) {
+    private void rightRotate(RBNode<T> node) {
         if (null == node) {
             return;
         }
 
-        // 父节点
-        RBNode<T> parent = parentOf(node);
-
         // 左儿子
-        RBNode lNode = leftOf(node);
+        RBNode<T> leftNode = leftOf(node);
 
-        // 轴的右儿子变为为 原来的右分支的左儿子， 左儿子不变
-        node.left = lNode.right;
+        node.left = rightOf(leftNode);
 
-        // 左儿子的父亲变为轴的父亲
-        lNode.parent = parent;
-
-        // 轴的父节点变为 左儿子
-        lNode.left = node;
-        node.parent = lNode;
-
-        // 父节点不为空
-        if (null != parent) {
-            if (node == leftOf(parent)) {
-                parent.left = lNode;
-            } else { // 轴是父节点的右节点
-                parent.right = lNode;
-            }
+        if(rightOf(leftNode) != null){
+            rightOf(leftNode).parent = node;
         }
+        leftNode.parent = node.parent;
+
+        if(parentOf(node) == null){
+            root = leftNode;
+        } else if(rightOf(parentOf(node)) == node){
+            node.parent.right = leftNode;
+        } else {
+            node.parent.left = leftNode;
+        }
+        leftNode.right = node;
+        node.parent = leftNode;
     }
 
 
@@ -227,9 +218,9 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
                 if (isRed(uncle)) {
 
                     // 如果叔元素是红色，则将父元素和叔元素置为黑色，祖父置为红色，当前节点变为祖父元素
-                    uncle.color = BLACK;
-                    parentOf(node).color = BLACK;
-                    grandparentOf(node).color = RED;
+                    setColor(uncle, BLACK);
+                    setColor(parentOf(node), BLACK);
+                    setColor(grandparentOf(node), RED);
                     node = grandparentOf(node);
                 } else {
 
@@ -239,8 +230,8 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
                         node = parentOf(node);
                         leftRotate(node);
                     }
-                    parentOf(node).color = BLACK;
-                    grandparentOf(node).color = RED;
+                    setColor(parentOf(node), BLACK);
+                    setColor(grandparentOf(node), RED);
                     rightRotate(grandparentOf(node));
                 }
             } else {
@@ -248,9 +239,9 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
                 RBNode<T> uncle = leftOf(grandparentOf(node));
                 if (isRed(uncle)) {
                     // 如果叔元素是红色，则将父元素和叔元素置为黑色，祖父置为红色，当前节点变为祖父元素
-                    uncle.color = BLACK;
-                    parentOf(node).color = BLACK;
-                    grandparentOf(node).color = RED;
+                    setColor(uncle, BLACK);
+                    setColor(parentOf(node), BLACK);
+                    setColor(grandparentOf(node), RED);
                     node = grandparentOf(node);
                 } else {
 
@@ -266,7 +257,7 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
                 }
             }
         }
-        root.color = true;
+        setColor(root, BLACK);
     }
 
     private boolean isBlack(RBNode<T> node) {
@@ -302,6 +293,8 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
     @Override
     public boolean remove(T value) {
 
+        System.out.println("delete " + value);
+
         // 1.查找元素
         RBNode<T> node = getNode(value);
 
@@ -322,7 +315,6 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
      */
     private void deleteNode(RBNode<T> node) {
 
-        System.out.println("before " + node.value);
 
         // 如果该节点有2个非叶子的儿子节点，则找到左儿子的最大值，将最大值替换到需要删除的节点上
         // 转为删除左儿子最大值的问题
@@ -331,12 +323,14 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
             node.value = leftMax.value;
             node = leftMax;
         }
+        System.out.println("before " + node.value);
 
         // 从此处起转化为删除最多只有一个儿子的问题
         RBNode<T> child = leftOf(node) != null ? leftOf(node) : rightOf(node);
         if (null != child) {
 
-            // 有一个儿子,把儿子取代父亲的位置
+            // 有一个儿子,把儿子取代父亲的位置, 有儿子必然是红色的儿子
+            System.out.println(child.color);
             child.parent = node.parent;
             if (parentOf(node) == null) {
                 root = child; //删除点是根的情况
@@ -350,6 +344,10 @@ public class RBTree<T> implements BinarySortTree<T>, Serializable {
             node.right = null;
             node.parent = null;
             child.color = BLACK;
+
+            if(isBlack(parentOf(node))){
+                fixAfterDelete(child);
+            }
         } else if (null == parentOf(node)) {
 
             // 既没儿子也没父节点，则说明这是树的唯一元素，直接删除即可
