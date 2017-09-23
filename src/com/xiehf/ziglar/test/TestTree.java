@@ -2,6 +2,9 @@ package com.xiehf.ziglar.test;
 
 import com.xiehf.ziglar.maps.RBTree;
 
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -11,21 +14,51 @@ import java.util.Scanner;
 public class TestTree {
 
     public static void main(String[] args) {
+        TestTree tt = new TestTree();
+
+        InnerClass in = new TestTree.InnerClass(22);
+
+        System.out.println("调用前: " + in.value);
+
+        tt.reset(in);
+
+        System.out.println("调用后: " + in.value);
+
+        int a = 2;
+        System.out.println("重置前:" + a);
+        tt.resetInt(a);
+        System.out.println("重置后:" + a);
 
 
-        RBTree rb = new RBTree();
-        Scanner scanner = new Scanner(System.in);
-        int t = 0;
-        while (t < 200){
-            int i = new Random().nextInt(500);
-            rb.add(i);
-            t++;
+        Map<Integer, String> map = new HashMap<>();
+        System.out.println(map.size());
+        tt.setMap(map);
+        System.out.println(map.size());
+    }
+
+
+    void reset(InnerClass innerClass) {
+        innerClass.value= 33;
+        System.out.println("调用中:" + innerClass.value);
+    }
+
+    void resetInt(int a){
+        a = 3;
+    }
+
+    void setMap(Map<Integer, String> map ){
+        map.put(1, "22");
+    }
+
+    static class InnerClass{
+
+        int value;
+
+        public InnerClass() {
         }
-        System.out.println(rb);
-        while(t>0){
-            int i = new Random().nextInt(500);
-            rb.remove(i);
-            t--;
+
+        public InnerClass(int value) {
+            this.value = value;
         }
     }
 }
